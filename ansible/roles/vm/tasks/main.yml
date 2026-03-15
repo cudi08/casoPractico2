@@ -1,0 +1,67 @@
+---
+- name: Update repositories
+  apt:
+    update_cache: yes
+  become: true
+
+- name: Install podman
+  apt:
+    name: podman
+    state: present
+    update_cache: yes
+
+- name: Login to ACR
+  containers.podman.podman_login:
+    registry: "{{ acr_login_server }}"
+    username: "{{ acr_admin_username }}"
+    password: "{{ acr_admin_password }}"
+
+- name: Pull image from ACR
+  containers.podman.podman_image:
+    name: "{{ acr_login_server }}/nginx"
+    tag: casopractico2
+    state: present
+
+- name: Create host volume directory
+  file:
+    path: /opt/webdata
+    state: directory
+  become: true
+
+- name: Run web container
+  containers.podman.podman_container:
+    name: nginx
+    image: "{{ acr_login_server }}/nginx:casopractico2"
+    state: started
+    ports:
+      - "8080:80"
+    volume:
+      - /opt/webdata:/usr/share/nginx/html
+
+- name: Create web content
+  copy:
+    dest: /opt/webdata/index.html
+    content: "Caso Practico 2 funcionando"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
+- name: Generate systemd service
+  command: podman generate systemd --name nginx --files --new
+  args:
+    chdir: /home/azureuser
+
+- name: Move service to systemd
+  copy:
+    src: container-nginx.service
+    dest: /etc/systemd/system/container-nginx.service
+    remote_src: true
+  become: true
+
+- name: Enable service
+  systemd:
+    name: container-nginx
+    enabled: true
+    state: started
+  become: true

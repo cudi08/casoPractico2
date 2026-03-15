@@ -1,0 +1,31 @@
+---
+- name: Create ACR secret
+  command: >
+    kubectl create secret docker-registry acr-secret
+    --docker-server={{ acr_login_server }}
+    --docker-username={{ acr_username }}
+    --docker-password={{ acr_password }}
+
+- name: Create Persistent Volume
+  template:
+    src: pv.yml.j2
+    dest: /tmp/pv.yml
+
+- name: Apply PV
+  command: kubectl apply -f /tmp/pv.yml
+
+- name: Create deployment template
+  template:
+    src: deployment.yml.j2
+    dest: /tmp/deployment.yml
+
+- name: Deploy application
+  command: kubectl apply -f /tmp/deployment.yml
+
+- name: Create LoadBalancer service
+  template:
+    src: service.yml.j2
+    dest: /tmp/service.yml
+
+- name: Apply service
+  command: kubectl apply -f /tmp/service.yml

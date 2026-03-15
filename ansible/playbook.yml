@@ -1,0 +1,20 @@
+---
+- name: Configure ACR
+  hosts: acr
+  vars_files:
+    - vars/secrets.yml
+  roles:
+    - acr
+
+- name: Configure VM
+  hosts: vm
+  vars_files:
+    - vars/secrets.yml
+  become: true
+  roles:
+    - vm
+
+      #- name: Deploy to AKS
+      #  hosts: aks
+      #  roles:
+      #    - aks
