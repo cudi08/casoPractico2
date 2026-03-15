@@ -11,9 +11,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   identity {
     type = "SystemAssigned"
   }
-  role_based_access_control {
-    enabled = true
-  }
+  role_based_access_control_enabled = true
 
   tags = {
     environment = "casopractico2"
