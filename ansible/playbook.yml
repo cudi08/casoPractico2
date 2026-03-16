@@ -6,15 +6,17 @@
   roles:
     - acr
 
-- name: Configure VM
-  hosts: vm
+      #- name: Configure VM
+      #  hosts: vm
+      #  vars_files:
+      #    - vars/secrets.yml
+      #  become: true
+      #  roles:
+      #    - vm
+      #
+- name: Deploy to AKS
+  hosts: aks
   vars_files:
     - vars/secrets.yml
-  become: true
   roles:
-    - vm
-
-      #- name: Deploy to AKS
-      #  hosts: aks
-      #  roles:
-      #    - aks
+    - aks

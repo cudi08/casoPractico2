@@ -1,31 +1,107 @@
----
-- name: Create ACR secret
-  command: >
-    kubectl create secret docker-registry acr-secret
-    --docker-server={{ acr_login_server }}
-    --docker-username={{ acr_username }}
-    --docker-password={{ acr_password }}
+- name: Asegurar que el Namespace existe
+  kubernetes.core.k8s:
+    name: voting-app
+    kind: Namespace
+    state: present
 
-- name: Create Persistent Volume
-  template:
-    src: pv.yml.j2
-    dest: /tmp/pv.yml
+- name: Crear el Persistent Volume Claim para Redis
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: redis-pvc
+        namespace: voting-app
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: default 
+        resources:
+          requests:
+            storage: 1Gi
 
-- name: Apply PV
-  command: kubectl apply -f /tmp/pv.yml
+- name: Desplegar Backend (Redis) y su Service
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      - apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: azure-vote-back
+          namespace: voting-app
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: azure-vote-back
+          template:
+            metadata:
+              labels:
+                app: azure-vote-back
+            spec:
+              containers:
+              - name: azure-vote-back
+                image: "{{ acr_login_server }}/redis:casopractico2"
+                args: ["redis-server", "--appendonly", "yes"]
+                ports:
+                - containerPort: 6379
+                volumeMounts:
+                - name: redis-data
+                  mountPath: /data
+              volumes:
+              - name: redis-data
+                persistentVolumeClaim:
+                  claimName: redis-pvc
 
-- name: Create deployment template
-  template:
-    src: deployment.yml.j2
-    dest: /tmp/deployment.yml
+      - apiVersion: v1
+        kind: Service
+        metadata:
+          name: azure-vote-back # Este nombre es el que usa el front para conectar
+          namespace: voting-app
+        spec:
+          ports:
+          - port: 6379
+          selector:
+            app: azure-vote-back
 
-- name: Deploy application
-  command: kubectl apply -f /tmp/deployment.yml
+- name: Desplegar Frontend y Service Público
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      - apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: azure-vote-front
+          namespace: voting-app
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: azure-vote-front
+          template:
+            metadata:
+              labels:
+                app: azure-vote-front
+            spec:
+              containers:
+              - name: azure-vote-front
+                image: "{{ acr_login_server }}/azure-vote-front:casopractico2"
+                env:
+                - name: REDIS
+                  value: "azure-vote-back" # Conecta con el service de arriba
+                ports:
+                - containerPort: 80
 
-- name: Create LoadBalancer service
-  template:
-    src: service.yml.j2
-    dest: /tmp/service.yml
+      - apiVersion: v1
+        kind: Service
+        metadata:
+          name: azure-vote-front
+          namespace: voting-app
+        spec:
+          type: LoadBalancer # PUNTO 4: Acceso desde Internet
+          ports:
+          - port: 80
+          selector:
+            app: azure-vote-front
 
-- name: Apply service
-  command: kubectl apply -f /tmp/service.yml

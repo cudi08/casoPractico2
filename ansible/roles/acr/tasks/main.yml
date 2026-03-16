@@ -28,3 +28,43 @@
     name: "{{ acr_login_server }}/nginx:casopractico2"
     push: true
   become: true
+
+- name: Pull public vote image
+  containers.podman.podman_image:
+    name: docker.io/suhuruli/azure-vote-front
+    tag: latest
+    state: present
+  become: true
+
+- name: Tag image for ACR
+  containers.podman.podman_tag:
+    image: docker.io/suhuruli/azure-vote-front:latest
+    target_names:
+      - "{{ acr_login_server }}/azure-vote-front:casopractico2"
+  become: true
+
+- name: Push image to ACR
+  containers.podman.podman_image:
+    name: "{{ acr_login_server }}/azure-vote-front:casopractico2"
+    push: true
+  become: true
+
+- name: Pull public redis image
+  containers.podman.podman_image:
+    name: docker.io/library/redis
+    tag: latest
+    state: present
+  become: true
+
+- name: Tag image for ACR
+  containers.podman.podman_tag:
+    image: docker.io/library/redis:latest
+    target_names:
+      - "{{ acr_login_server }}/redis:casopractico2"
+  become: true
+
+- name: Push image to ACR
+  containers.podman.podman_image:
+    name: "{{ acr_login_server }}/redis:casopractico2"
+    push: true
+  become: true
