@@ -21,6 +21,8 @@
           requests:
             storage: 1Gi
 
+
+
 - name: Desplegar Backend (Redis) y su Service
   kubernetes.core.k8s:
     state: present
@@ -40,9 +42,19 @@
               labels:
                 app: azure-vote-back
             spec:
+              initContainers:
+              - name: fix-permissions
+                image: busybox
+                command: ["sh", "-c", "chown -R 999:999 /data"]
+                volumeMounts:
+                - name: redis-data
+                  mountPath: /data
               containers:
               - name: azure-vote-back
                 image: "{{ acr_login_server }}/redis:casopractico2"
+                securityContext:
+                  runAsUser: 0
+                  fsGroup: 999
                 args: ["redis-server", "--appendonly", "yes"]
                 ports:
                 - containerPort: 6379
@@ -57,7 +69,7 @@
       - apiVersion: v1
         kind: Service
         metadata:
-          name: azure-vote-back # Este nombre es el que usa el front para conectar
+          name: azure-vote-back
           namespace: voting-app
         spec:
           ports:
@@ -89,7 +101,7 @@
                 image: "{{ acr_login_server }}/azure-vote-front:casopractico2"
                 env:
                 - name: REDIS
-                  value: "azure-vote-back" # Conecta con el service de arriba
+                  value: "azure-vote-back" 
                 ports:
                 - containerPort: 80
 
@@ -99,7 +111,7 @@
           name: azure-vote-front
           namespace: voting-app
         spec:
-          type: LoadBalancer # PUNTO 4: Acceso desde Internet
+          type: LoadBalancer
           ports:
           - port: 80
           selector:

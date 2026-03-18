@@ -4,6 +4,9 @@ resource "azurerm_virtual_network" "my_terraform_network" {
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
+  tags = {
+    environment = "casopractico2"
+  }
 }
 
 # Create subnet
@@ -21,6 +24,9 @@ resource "azurerm_public_ip" "my_terraform_public_ip" {
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
+  tags = {
+    environment = "casopractico2"
+  }
 }
 
 # Create Network Security Group and rule
@@ -28,6 +34,10 @@ resource "azurerm_network_security_group" "my_terraform_nsg" {
   name                = "myNetworkSecurityGroup"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
+  tags = {
+    environment = "casopractico2"
+  }
+
 
   security_rule {
     name                       = "SSH"
@@ -65,6 +75,10 @@ resource "azurerm_network_interface" "my_terraform_nic" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.my_terraform_public_ip.id
   }
+  tags = {
+    environment = "casopractico2"
+  }
+
 }
 
 # Connect the security group to the network interface
@@ -104,4 +118,9 @@ resource "azurerm_linux_virtual_machine" "my_terraform_vm" {
     username   = "azureuser"
     public_key = tls_private_key.ssh_key.public_key_openssh
   }
+
+  tags = {
+    environment = "casopractico2"
+  }
+
 }

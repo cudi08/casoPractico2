@@ -5,4 +5,7 @@ resource "azurerm_container_registry" "acr" {
 
   sku           = "Basic"
   admin_enabled = true
+  tags = {
+    environment = "casopractico2"
+  }
 }
